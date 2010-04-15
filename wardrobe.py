@@ -21,6 +21,9 @@ class Locker:
 	def __del__(self):
 		self.unlockIfLocked()
 	def lock(self):
+		# Don't lock again if we already own a lock.
+		if self.locked:
+			return (True)
 		try:
 			os.mkdir(self.path)
 		except OSError, e:
