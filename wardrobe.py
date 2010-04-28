@@ -6,6 +6,13 @@ import os
 import sys
 import tempfile
 
+
+
+class SettingCombinationError(StandardError):
+	"""You have tried to combine settings which are not combinable."""
+
+
+
 class Locker(object):
 	"""
 	Filesystem-based atomic locking.
@@ -139,3 +146,56 @@ class Locker(object):
 		"""
 		if self.locked:
 			self._unlock()
+
+
+
+class Place(object):
+	"""
+	A source or destination path, possibly on a remote system.
+	
+	This class is not to be used directly. Instead, use Source or Destination.
+	"""
+
+	def _getstring(self):
+		"""
+		The user@host::/directory string to be passed to rdiff-backup.
+		
+		Read-only.
+		"""
+		if isinstance(self.directory, str):
+			directory = self.directory
+		else:
+			directory = self.defaultdir
+		if isinstance(self.user, str):
+			if isinstance(self.host, str):
+				return '%s@%s::%s' % (self.user, self.host, directory)
+			else:
+				raise SettingCombinationError('user without host')
+		else:
+			if isinstance(self.host, str):
+				return '%s::%s' % (self.host, directory)
+			elif isinstance(self.directory, str):
+				return directory
+			else:
+				raise SettingCombinationError('no settings specified')
+
+	string = property(_getstring)
+
+	def __init__(self, directory=None, host=None, user=None):
+		self.defaultdir = '/'
+		self.directory = directory
+		self.host = host
+		self.user = user
+
+	def __repr__(self):
+		return self.string
+
+
+
+class Source(Place):
+	"""A source path, possibly on a remote system."""
+
+
+
+class Destination(Place):
+	"""A destination path, possibly on a remote system."""
