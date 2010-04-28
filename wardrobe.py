@@ -38,8 +38,13 @@ class Locker(object):
 
 	path = property(_getpath, _setpath)
 
-	_locked = False
-	"""Whether this instance is currently holding a lock or not."""
+	def _getlocked(self):
+		"""
+		Whether this instance is currently holding a lock or not. Read-only.
+		"""
+		return self._locked
+
+	locked = property(_getlocked)
 
 	def __init__(self, locknow = False, directory = 'wardrobe.lock.d'):
 		"""
@@ -50,6 +55,7 @@ class Locker(object):
 		instance will fail if it can not be acquired.
 		"""
 		self.path = directory
+		self._locked = False
 		if locknow:
 			self.lock()
 
@@ -90,12 +96,6 @@ class Locker(object):
 		self._locked = False
 		return True
 
-	def isLocked(self):
-		"""
-		Return whether this instance holds a lock or not.
-		"""
-		return self._locked
-
 	def lock(self):
 		"""
 		Acquire the lock.
@@ -103,7 +103,7 @@ class Locker(object):
 		If already locked, a StateError is raised. If the lock could not be
 		acquired, an AcquireError is raised. Return True.
 		"""
-		if self._locked:
+		if self.locked:
 			raise self.StateError('already locked, cannot lock again')
 		return self._lock()
 
@@ -115,7 +115,7 @@ class Locker(object):
 		is returned. If acquiring fails, an AcquireError is raised.
 		"""
 		# Don't lock again if we already own a lock.
-		if self._locked:
+		if self.locked:
 			return True
 		return self._lock()
 
@@ -126,7 +126,7 @@ class Locker(object):
 		If not locked, a StateError is raised. If the lock can not be released,
 		an error (most likely OSError) is raised. Return True.
 		"""
-		if not self._locked:
+		if not self.locked:
 			raise self.StateError('not locked, cannot unlock')
 		return self._unlock()
 
@@ -137,5 +137,5 @@ class Locker(object):
 		If no lock is held, return True. Else, behave like unlock(), except that
 		no StateError will be raised.
 		"""
-		if self._locked:
+		if self.locked:
 			self._unlock()
