@@ -19,8 +19,24 @@ class Locker(object):
 	class StateError(StandardError):
 		"""The operation is not valid in the current state."""
 
-	_path = None
-	"""The complete path to the locking directory."""
+	def _getpath(self):
+		"""
+		The complete path to the locking directory.
+		
+		When setting this property to a relative path, it will be qualified by
+		prepending the system's temp directory to it.
+		"""
+		return self._path
+
+	def _setpath(self, value):
+		if not isinstance(value, str):
+			raise TypeError('path has to be a string')
+		if os.path.isabs(value):
+			self._path = value
+		else:
+			self._path = os.path.join(tempfile.gettempdir(), value)
+
+	path = property(_getpath, _setpath)
 
 	_locked = False
 	"""Whether this instance is currently holding a lock or not."""
@@ -33,9 +49,7 @@ class Locker(object):
 		If locknow is set, the lock will be requested instantly; creating an
 		instance will fail if it can not be acquired.
 		"""
-		if not isinstance(directory, str):
-			raise TypeError('directory has to be a string')
-		self._path = os.path.join(tempfile.gettempdir(), directory)
+		self.path = directory
 		if locknow:
 			self.lock()
 
@@ -51,7 +65,7 @@ class Locker(object):
 		"""
 		# Try to acquire the lock.
 		try:
-			os.mkdir(self._path)
+			os.mkdir(self.path)
 		except OSError, e:
 			if e.errno == errno.EEXIST:
 				# The directory (i.e. the lock) already exists.
@@ -72,7 +86,7 @@ class Locker(object):
 		# Warning: Without state checks, the directory will be removed even if
 		# it was not created by this instance! (However, only empty directories
 		# will be removed.)
-		os.rmdir(self._path)
+		os.rmdir(self.path)
 		self._locked = False
 		return True
 
