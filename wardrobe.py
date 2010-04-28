@@ -3,6 +3,7 @@
 import atexit
 import errno
 import os
+import re
 import sys
 import tempfile
 
@@ -199,3 +200,120 @@ class Source(Place):
 
 class Destination(Place):
 	"""A destination path, possibly on a remote system."""
+
+
+
+class SDGenerator(object):
+	"""
+	Given some data (usually a string), generate a Source and Destination pair.
+	
+	This class is not to be used directly. Instead, use one of the derived
+	classes or develop your own.
+	"""
+
+	def __init__(self):
+		raise NotImplementedError('has to be subclassed')
+
+
+
+class PullCompleteHost(SDGenerator):
+	"""
+	Source and Destination generator for pulling backups of complete hosts.
+	
+	A common scenario is "iterate over hosts a, b and c and pull backups of
+	their root directory, storing them in /var/backup/{a,b,c}". This class
+	generates Source and Destination for such a scenario. If your host names
+	contain unusual characters, the regex property allows you to substitute
+	those when generating the destination directory.
+	"""
+
+	def _getregex(self):
+		"""
+		The RegexObject that is used for finding substrings in the source name
+		that should be replaced by substitute.
+		
+		You may set this property to anything re.compile() understands (most
+		importantly, strings and already compiled regexes).
+		
+		Defaults to '[^A-Za-z0-9.-]'.
+		"""
+		return self._regex
+
+	def _setregex(self, value):
+		self._regex = re.compile(value)
+
+	regex = property(_getregex, _setregex)
+
+	def _getsubst(self):
+		"""
+		The string that will replace substrings matched by regex.
+		
+		Defaults to '_'.
+		"""
+		return self._subst
+
+	def _setsubst(self, value):
+		if not isinstance(value, str):
+			raise TypeError('subst has to be a string')
+		self._subst = value
+
+	subst = property(_getsubst, _setsubst)
+
+	def _getbasedir(self):
+		"""
+		The base directory to store backups in.
+		
+		The host name passed to generate() will be used to construct a
+		subdirectory name. The final destination will then be the concatenation
+		of base directory and subdirectory.
+		
+		When setting this property to a relative path it will automatically be
+		qualified to an absolute one by prepending the current directory.
+		"""
+		return self._basedir
+
+	def _setbasedir(self, value):
+		if not isinstance(value, str):
+			raise TypeError('basedir has to be a string')
+		if os.path.isabs(value):
+			self._basedir = value
+		else:
+			self._basedir = os.path.abspath(value)
+
+	basedir = property(_getbasedir, _setbasedir)
+
+	def _getuser(self):
+		"""
+		The user to connect to the remote host as.
+		
+		Defaults to None, which means that no user name will be supplied to
+		rdiff-backup, which will in turn not supply a user to ssh. ssh will then
+		either use the name configured in ~/.ssh/config or the current user.
+		"""
+		return self._user
+
+	def _setuser(self, value):
+		if not (isinstance(value, str) or value is None):
+			raise TypeError('user has to be a string or None')
+		self._user = value
+
+	user = property(_getuser, _setuser)
+
+	def __init__(self, basedir, user=None):
+		"""
+		Initialize a new generator that will use the given basedir to save
+		backups in.
+		
+		You may supply user as a convenience.
+		"""
+		self.basedir = basedir
+		self.user = user
+		self.regex = '[^A-Za-z0-9.-]'
+		self.subst = '_'
+
+	def generate(self, host):
+		"""Generate a Source and Destination pair for the given host."""
+		s = Source('/', host, self.user)
+		d = Destination(os.path.join(self.basedir,
+		                             self.regex.sub(self.subst, host)))
+		return (s, d)
