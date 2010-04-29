@@ -317,3 +317,154 @@ class PullCompleteHost(SDGenerator):
 		d = Destination(os.path.join(self.basedir,
 		                             self.regex.sub(self.subst, host)))
 		return (s, d)
+
+
+
+class Filter(object):
+	"""Base class for filter parameters passed to rdiff-backup."""
+
+	def _getparams(self):
+		"""
+		A list of string parameters suitable for passing to rdiff-backup.
+		
+		Read-only, use the writable properties of the subclasses to set.
+		"""
+		raise NotImplementedError('has to be subclassed')
+
+	params = property(_getparams)
+
+
+
+class SingleFilter(Filter):
+	"""Base class for single-value filter parameters."""
+
+	def _getvalue(self):
+		"""The value of this parameter (i.e. a path)."""
+		return self._value
+
+	def _setvalue(self, value):
+		if not isinstance(value, str):
+			raise TypeError('value has to be a string')
+		self._value = value
+
+	value = property(_getvalue, _setvalue)
+
+	def _getparams(self):
+		"""
+		A list consisting of two strings: This parameter's name and its value.
+		
+		Read-only, use the value property to set the value.
+		"""
+		return ['--%s' % self._param, self.value]
+
+	params = property(_getparams)
+
+	def __init__(self, value):
+		"""
+		Create a new filter parameter.
+		
+		You have to specify the value the filter should have, i.e. a (possibly
+		globbed etc.) path.
+		"""
+		self.value = value
+
+
+
+class FilterSet(Filter):
+	"""A class able to hold a number of filters, useful for grouping."""
+
+	def _getparams(self):
+		"""
+		The flattened list of parameter name and value strings, suitable for
+		passing to rdiff-backup.
+		
+		Read-only, use the extend() method to add new Filters.
+		"""
+		r = []
+		for f in self._filters:
+			r.extend(f.params)
+		return r
+
+	params = property(_getparams)
+
+	def __init__(self, *args):
+		"""
+		Create a new FilterSet.
+		
+		You may pass any number of Filter instances or sequences of Filter
+		instances as arguments.
+		"""
+		self._filters = []
+		self.extend(args)
+
+	def extend(self, *args):
+		"""
+		Add any number of Filter instances to the FilterSet.
+		
+		The args may either be Filter instances or sequences of Filter
+		instances.
+		"""
+		for arg in args:
+			# Check whether the argument is a single Filter instance.
+			if isinstance(arg, Filter):
+				self._filters.append(arg)
+			else:
+				# Check whether the argument is iterable.
+				i = None
+				try:
+					i = iter(arg)
+				except TypeError:
+					# If it is not, it is nothing we allow to add.
+					raise TypeError('attempt to add non-Filter, non-sequence type')
+				if not i is None:
+					# The argument is iterable. Recursively try to add it.
+					for subarg in arg:
+						self.extend(subarg)
+
+
+
+class Exclude(SingleFilter):
+	"""An --exclude parameter."""
+	_param = 'exclude'
+
+
+
+class ExcludeFilelist(SingleFilter):
+	"""An --exclude-filelist parameter."""
+	_param = 'exclude-filelist'
+
+
+
+class ExcludeGlobbingFilelist(SingleFilter):
+	"""An --exclude-globbing-filelist parameter."""
+	_param = 'exclude-globbing-filelist'
+
+
+
+class ExcludeRegexp(SingleFilter):
+	"""An --exclude-regexp parameter."""
+	_param = 'exclude-regexp'
+
+
+
+class Include(SingleFilter):
+	"""An --include parameter."""
+	_param = 'include'
+
+
+
+class IncludeFilelist(SingleFilter):
+	"""An --include-filelist parameter."""
+	_param = 'include-filelist'
+
+
+
+class IncludeGlobbingFilelist(SingleFilter):
+	"""An --include-globbing-filelist parameter."""
+	_param = 'include-globbing-filelist'
+
+
+
+class IncludeRegexp(SingleFilter):
+	"""An --include-regexp parameter."""
+	_param = 'include-regexp'
