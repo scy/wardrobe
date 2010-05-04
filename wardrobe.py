@@ -163,6 +163,9 @@ class Defaultable(object):
 		"""Return value.__str__()."""
 		return self.value.__str__()
 
+	_checktype = None
+	"""If set to a type, value has to be an instance of this type."""
+
 	def _getparent(self):
 		"""
 		The parent of this Defaultable.
@@ -199,12 +202,15 @@ class Defaultable(object):
 			return self._value
 
 	def _setvalue(self, value):
+		if isinstance(self._checktype, type) and \
+			not isinstance(value, self._checktype):
+			raise TypeError('value has to be a %s' % self._checktype.__name__)
 		self.defaulting = False
 		self._value = value
 
 	value = property(_getvalue, _setvalue)
 
-	def __init__(self, parentorvalue=None):
+	def __init__(self, parentorvalue=None, checktype=None):
 		"""
 		Create a new Defaultable.
 		
@@ -212,6 +218,10 @@ class Defaultable(object):
 		recognized by their type: Supply a Defaultable to set the parent,
 		supply anything else to set the value. If you want to set the value to
 		be a Defaultable, you have to set the value property explicitly.
+		
+		You may also supply a type. Setting this instance's value will then only
+		succeed if the new value is an instance of the specified type. The type
+		can currently only be set at construction time.
 		"""
 		if isinstance(parentorvalue, Defaultable):
 			self.value = None
@@ -221,6 +231,8 @@ class Defaultable(object):
 			self.parent = None
 			self.value = parentorvalue
 			self.defaulting = False
+		if isinstance(checktype, type):
+			self._checktype = checktype
 
 
 
