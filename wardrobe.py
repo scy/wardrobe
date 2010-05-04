@@ -455,6 +455,17 @@ class Filter(object):
 
 
 
+class FlagFilter(Filter):
+	"""Base class for flag-style filter parameters."""
+
+	def _getparams(self):
+		"""A list of one string: This parameter's name."""
+		return ['--%s' % self._param]
+
+	params = property(_getparams)
+
+
+
 class SingleFilter(Filter):
 	"""Base class for single-value filter parameters."""
 
@@ -549,6 +560,12 @@ class Exclude(SingleFilter):
 
 
 
+class ExcludeDeviceFiles(FlagFilter):
+	"""An --exclude-device-files parameter."""
+	_param = 'exclude-device-files'
+
+
+
 class ExcludeFilelist(SingleFilter):
 	"""An --exclude-filelist parameter."""
 	_param = 'exclude-filelist'
@@ -561,9 +578,37 @@ class ExcludeGlobbingFilelist(SingleFilter):
 
 
 
+class ExcludeOtherFilesystems(FlagFilter):
+	"""An --exclude-other-filesystems parameter."""
+	_param = 'exclude-other-filesystems'
+
+
+
 class ExcludeRegexp(SingleFilter):
 	"""An --exclude-regexp parameter."""
 	_param = 'exclude-regexp'
+
+
+
+class ExcludeSpecialFiles(FlagFilter):
+	"""An --exclude-special-files parameter."""
+	_param = 'exclude-special-files'
+
+
+
+class ExcludeSockets(FlagFilter):
+	"""An --exclude-sockets parameter."""
+	_param = 'exclude-sockets'
+
+
+
+class ExcludeSymbolicLinks(FlagFilter):
+	"""An --exclude-symbolic-links parameter."""
+	_param = 'exclude-symbolic-links'
+
+
+
+# TODO: Support --exclude-if-present.
 
 
 
@@ -588,3 +633,15 @@ class IncludeGlobbingFilelist(SingleFilter):
 class IncludeRegexp(SingleFilter):
 	"""An --include-regexp parameter."""
 	_param = 'include-regexp'
+
+
+
+class IncludeSpecialFiles(FlagFilter):
+	"""An --include-special-files parameter."""
+	_param = 'include-special-files'
+
+
+
+class IncludeSymbolicLinks(FlagFilter):
+	"""An --include-symbolic-links parameter."""
+	_param = 'include-symbolic-links'
