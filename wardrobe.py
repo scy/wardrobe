@@ -486,7 +486,7 @@ class SingleFilter(Filter):
 		
 		Read-only, use the value property to set the value.
 		"""
-		return ['--%s' % self._param, self.value]
+		return ['--%s' % self._param, str(self.value)]
 
 	params = property(_getparams)
 
@@ -498,6 +498,18 @@ class SingleFilter(Filter):
 		globbed etc.) path.
 		"""
 		self.value = value
+
+
+
+class IntFilter(SingleFilter):
+	"""Base class for single-value filter parameters having an integer value."""
+
+	def _setvalue(self, value):
+		if not isinstance(value, int):
+			raise TypeError('value has to be an int')
+		self._value = value
+
+	value = property(SingleFilter._getvalue, _setvalue)
 
 
 
@@ -645,3 +657,15 @@ class IncludeSpecialFiles(FlagFilter):
 class IncludeSymbolicLinks(FlagFilter):
 	"""An --include-symbolic-links parameter."""
 	_param = 'include-symbolic-links'
+
+
+
+class MaxFileSize(IntFilter):
+	"""A --max-file-size parameter."""
+	_param = 'max-file-size'
+
+
+
+class MinFileSize(IntFilter):
+	"""A --min-file-size parameter."""
+	_param = 'min-file-size'
