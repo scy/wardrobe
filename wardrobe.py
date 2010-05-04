@@ -150,6 +150,80 @@ class Locker(object):
 
 
 
+class Defaultable(object):
+	"""
+	Stores a single value or points to another Defaultable.
+	
+	Using this class, you can cascade and template options: If you leave value
+	unset, but point parent to another Defaultable, that Defaultable's value
+	will be used when trying to read the value.
+	"""
+
+	def __str__(self):
+		"""Return value.__str__()."""
+		return self.value.__str__()
+
+	def _getparent(self):
+		"""
+		The parent of this Defaultable.
+		
+		If this instance's value is unset, the value of the Defaultable
+		referenced here will be used. If you set this property to None, there
+		will be no parent and the local value will always be returned, even if
+		it is None.
+		"""
+		return self._parent
+
+	def _setparent(self, value):
+		if not (isinstance(value, Defaultable) or value is None):
+			raise TypeError('parent has to be a Defaultable instance')
+		self._parent = value
+
+	parent = property(_getparent, _setparent)
+
+	def _getvalue(self):
+		"""
+		The value of this Defaultable, or that of its parent.
+		
+		When this property is written to, the instance's defaulting property
+		will be set to False, even if you set the value to None. To use the
+		default again, set defaulting=True.
+		
+		When defaulting evaluates to True, reading this property will return
+		the value of the parent. Else it will return the stored value, or None
+		if no value has been stored yet.
+		"""
+		if self.defaulting and not (self.parent is None):
+			return self.parent.value
+		else:
+			return self._value
+
+	def _setvalue(self, value):
+		self.defaulting = False
+		self._value = value
+
+	value = property(_getvalue, _setvalue)
+
+	def __init__(self, parentorvalue=None):
+		"""
+		Create a new Defaultable.
+		
+		You may supply a parent or a value as a convenience. They will be
+		recognized by their type: Supply a Defaultable to set the parent,
+		supply anything else to set the value. If you want to set the value to
+		be a Defaultable, you have to set the value property explicitly.
+		"""
+		if isinstance(parentorvalue, Defaultable):
+			self.value = None
+			self.parent = parentorvalue
+			self.defaulting = True
+		else:
+			self.parent = None
+			self.value = parentorvalue
+			self.defaulting = False
+
+
+
 class Place(object):
 	"""
 	A source or destination path, possibly on a remote system.
