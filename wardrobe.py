@@ -236,6 +236,40 @@ class Defaultable(object):
 
 
 
+class Ternary(object):
+	"""
+	Representing three possible truth values: True, False and None (unknown).
+	"""
+
+	def _getvalue(self):
+		"""
+		Set or retrieve the ternary value.
+		
+		Deleting this value is not possible. Trying to do so will result in it
+		being set to None.
+		"""
+		return self._value
+
+	def _setvalue(self, value):
+		if value not in (True, False, None):
+			raise TypeError('value has to be True, False or None')
+		self._value = value
+
+	def _delvalue(self):
+		self.value = None
+
+	value = property(_getvalue, _setvalue, _delvalue)
+
+	def __init__(self, value=None):
+		"""
+		Create a new Ternary.
+		
+		It will be initialized to None or the value you specify.
+		"""
+		self.value = value
+
+
+
 class Place(object):
 	"""
 	A source or destination path, possibly on a remote system.
