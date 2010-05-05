@@ -440,6 +440,114 @@ class PullCompleteHost(SDGenerator):
 
 
 
+class Option(object):
+	"""Class representing a command-line option."""
+
+	def _getname(self):
+		"""The option name as it appears on the command line, without dashes."""
+		return self._name
+
+	name = property(_getname)
+
+	def _getdashname(self):
+		"""The option name as it appears on the command line, with dashes."""
+		if self._type is Ternary:
+			if self.value is True:
+				return '--%s' % self.name
+			elif self.value is False:
+				return '--no-%s' % self.name
+			else:
+				return ''
+		else:
+			return '--%s' % self.name
+
+	dashname = property(_getdashname)
+
+	def _getpropertyname(self):
+		"""
+		Retrieve the option name in a property-compatible format.
+		
+		This version of the name has dashes and "no-" prefixes removed in order
+		to create a property name out of it. Read-only.
+		"""
+		n = self.name
+		# Do not remove "no-" for strings and ints. This is especially useful
+		# for --no-compression-regexp, where "no-" does not mean "disable".
+		if self._type not in (str, int):
+			n = n.replace('no-', '')
+		return n.replace('-', '')
+
+	propertyname = property(_getpropertyname)
+
+	def _getvalue(self):
+		"""Retrieve or set the option's value."""
+		if self._type is Ternary:
+			return self._value.value
+		else:
+			return self._value
+
+	def _setvalue(self, value):
+		if self._type is Ternary:
+			self._value.value = value
+		elif (self._type in (True, False) and value in (True, False)) or \
+		     (self._type in (int, str) and (value is None or \
+		                                    isinstance(value, self._type))):
+			self._value = value
+		else:
+			raise TypeError('value is of the wrong type')
+
+	value = property(_getvalue, _setvalue)
+
+	def _getparams(self):
+		"""
+		Return the command-line compatible version of the option name, depending
+		on the type.
+		
+		For strings, return ['--name', value] if value is not None, else [].
+		
+		For bytes, return ['--name', str(value)] if value is not None, else [].
+		
+		For boolean, return ['--name'] if value is not the value set at
+		construction time, else [].
+		
+		For Ternary, return ['--name'] if value is True, ['--no-name'] if value
+		is False, [] if it is unknown.
+		"""
+		if self._type is str and self.value is not None:
+			return [self.dashname, self.value]
+		elif self._type is int and self.value is not None:
+			return [self.dashname, str(self.value)]
+		elif self._type in (True, False) and self.value != self._type:
+			return [self.dashname]
+		elif self._type is Ternary and self.value in (True, False):
+			return [self.dashname]
+		else:
+			return []
+
+	params = property(_getparams)
+
+	def __init__(self, name, value):
+		"""
+		Create a new option.
+		
+		name is the option's command-line name, without leading dashes.
+		
+		value is the type or default value of this option. Valid values are str
+		(string), int (integers >= 0), True, False and Ternary.
+		"""
+		self._name = name
+		self._type = value
+		if self._type is Ternary:
+			self._value = Ternary()
+		elif self._type in (str, int):
+			self.value = None
+		elif self._type in (True, False):
+			self.value = self._type
+		else:
+			raise TypeError('type not supported')
+
+
+
 class Filter(object):
 	"""Base class for filter parameters passed to rdiff-backup."""
 
