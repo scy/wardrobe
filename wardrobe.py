@@ -546,6 +546,14 @@ class Option(object):
 		else:
 			raise TypeError('type not supported')
 
+	def default(self):
+		"""Reset this Option to its (type-dependent) default value."""
+		if self._type in (str, int, Ternary):
+			self.value = None
+		else:
+			self.value = self._type
+		return self.value
+
 
 
 class Filter(object):
