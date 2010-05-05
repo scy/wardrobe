@@ -1,5 +1,14 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2010, Dots United GmbH
+# All rights reserved.
+
+# Licensed under the 3-clause BSD license.
+# Please see the file LICENSE that came with this software
+# for additional information.
+
+
+
 import atexit
 import copy
 import errno
