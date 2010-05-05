@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 import atexit
+import copy
 import errno
 import os
 import re
+import subprocess
 import sys
 import tempfile
 
@@ -785,3 +787,162 @@ class MaxFileSize(IntFilter):
 class MinFileSize(IntFilter):
 	"""A --min-file-size parameter."""
 	_param = 'min-file-size'
+
+
+
+class BackupRun(object):
+	"""
+	Defines options to an rdiff-backup backup-mode run and provides wrappers
+	around it.
+	"""
+
+	def __getattr__(self, name):
+		"""
+		Retrieve one of the virtual properties.
+		
+		These will be served from the _defaultables dict.
+		"""
+		if name in self._defaultables:
+			return self._defaultables[name].value
+		raise AttributeError(name)
+
+	def __setattr__(self, name, value):
+		"""
+		Set one of the virtual properties.
+		
+		These will be served from the _defaultables dict.
+		"""
+		if name[0] == '_' or name in ('source', 'destination', 'filters'):
+			return object.__setattr__(self, name, value)
+		if name in self._defaultables:
+			# First unset defaulting, else the parent will be changed.
+			self._defaultables[name].defaulting = False
+			self._defaultables[name].value.value = value
+			return self._defaultables[name].value.value
+		raise AttributeError(name)
+
+	def __delattr__(self, name):
+		"""
+		"Delete" one of the virtual properties. This will actually set them back
+		to their default value.
+		"""
+		if name not in self._defaultables:
+			raise AttributeError(name)
+		if not self._defaultables[name].parent:
+			# We are probably a top-level BackupRun. Instruct the Option to
+			# reset itself to its default, then.
+			self._defaultables[name].value.default()
+		else:
+			# Set the Defaultable to be defaulting.
+			self._defaultables[name].defaulting = True
+		return self._defaultables[name].value.value
+
+	def _getsource(self):
+		"""The source of the backup run."""
+		return self._source.value
+
+	def _setsource(self, value):
+		if not isinstance(value, Source):
+			raise TypeError('source has to be a Source')
+		self._source.defaulting = False
+		self._source.value = value
+
+	source = property(_getsource, _setsource)
+
+	def _getdestination(self):
+		"""The destination of the backup run."""
+		return self._destination
+
+	def _setdestination(self, value):
+		if not isinstance(value, Destination):
+			raise TypeError('destination has to be a Destination')
+		self._destination.defaulting = False
+		self._destination.value = value
+
+	destination = property(_getdestination, _setdestination)
+
+	def _getfilters(self):
+		"""The FilterSet of the backup run."""
+		return self._filters
+
+	def _setfilters(self, value):
+		if not isinstance(value, FilterSet):
+			raise TypeError('filters has to be a FilterSet')
+		self._filters = value
+
+	filters = property(_getfilters, _setfilters)
+
+	def _getcmdline(self):
+		"""
+		A list of strings representing the command line.
+		
+		Command name, options, source and destination are included.
+		Read-only.
+		"""
+		# TODO: Make the command customizable.
+		r = ['rdiff-backup']
+		for d in self._defaultables.itervalues():
+			r.extend(d.value.params)
+		r.extend(self.filters.params)
+		r.append(str(self.source))
+		r.append(str(self.destination))
+		return r
+
+	cmdline = property(_getcmdline)
+
+	def __init__(self, parent=None):
+		"""
+		Create a new backup run, possibly based on the settings of another.
+		"""
+		if parent is not None and not isinstance(parent, BackupRun):
+			raise TypeError('parent has to be a BackupRun')
+		self._defaultables = {}
+		if parent:
+			self._source = Defaultable(parent._source, Source)
+			self._destination = Defaultable(parent._destination, Destination)
+			self._filters = copy.deepcopy(parent.filters)
+		else:
+			self._source = Defaultable(Source(), Source)
+			self._destination = Defaultable(Destination(), Destination)
+			self._filters = FilterSet()
+		# These are the supported settings, grouped by type or default value.
+		possible = {
+		False: (
+			'create-full-path', 'force', 'never-drop-acls',
+			'override-chars-to-quote', 'preserve-numerical-ids',
+			'use-compatible-timestamps',),
+		True: (
+			'no-acls', 'no-compare-inode', 'no-compression', 'no-eas',
+			'no-file-statistics', 'no-hard-links', 'no-resource-forks',
+			'ssh-no-compression',),
+		Ternary: (
+			'carbonfile',),
+		str: (
+			'group-mapping-file', 'no-compression-regexp', 'remote-schema',
+			'remote-tempdir', 'tempdir', 'user-mapping-file',),
+		int: (
+			'terminal-verbosity', 'verbosity',),
+		}
+		for (type_, tuple_) in possible.iteritems():
+			for name in tuple_:
+				# Create a new Option instance to store our (override) value.
+				o = Option(name, type_)
+				propertyname = o.propertyname
+				# Create a Defaultable and store the Option as its value.
+				d = Defaultable(o, Option)
+				if parent and propertyname in parent._defaultables:
+					# But if there is a parent, default to its value.
+					d.parent = parent._defaultables[propertyname]
+					d.defaulting = True
+				# Store the Defaultable.
+				self._defaultables[propertyname] = d
+
+	def run(self):
+		"""
+		Run a backup with these settings.
+		
+		Always returns True. If rdiff-backup failed, a CalledProcessError will
+		be raised.
+		"""
+		subprocess.check_call(self.cmdline)
+		return True
