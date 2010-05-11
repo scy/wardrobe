@@ -32,7 +32,8 @@ We are currently finding out. You may want to consider it “beta” code.
 
 ### How do I use it? ###
 
-We will add examples in a few days.
+Please have a look at `twohosts.example.py` for a simple example. It covers most
+of _wardrobe_’s current features.
 
 
 ### What are its requirements? ###
