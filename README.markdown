@@ -52,6 +52,18 @@ another license, talk to us.
 Please [report it at GitHub](http://github.com/dotsunited/wardrobe/issues).
 
 
+### What features are you planning to add? ###
+
+  * Introduce a queueing mechanism that allows you to iterate over a number of
+    hosts without having to write the loop yourself.
+
+  * Add some simple scheduling to that mechanism to enable constructs like
+    “only consider hosts which have not been backed up for five hours or longer”
+    or “only consider the host which has been least recently backed up”.
+
+  * Make some things possibly more convenient to write.
+
+
 ### May I contribute? ###
 
 Yes, absolutely.
@@ -61,3 +73,9 @@ Yes, absolutely.
 
 We are [Dots United](http://www.dotsunited.de/). We build web sites. And we do
 regular backups of our servers. That’s why we develop _wardrobe_.
+
+
+### How do I contact you? ###
+
+Please use the messaging feature of GitHub or the
+[issue tracker](http://github.com/dotsunited/wardrobe/issues).
