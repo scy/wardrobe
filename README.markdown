@@ -27,7 +27,7 @@ right order.
 
 ### Is it stable? ###
 
-We are currently finding out. You may want to consider it “beta” code.
+I am currently finding out. You may want to consider it “beta” code.
 
 
 ### How do I use it? ###
@@ -49,7 +49,7 @@ another license, talk to us.
 
 ### I have found a bug! ###
 
-Please [report it at GitHub](http://github.com/dotsunited/wardrobe/issues).
+Please [report it at GitHub](http://github.com/scy/wardrobe/issues).
 
 
 ### What features are you planning to add? ###
@@ -71,11 +71,16 @@ Yes, absolutely.
 
 ### Who are you? ###
 
-We are [Dots United](http://www.dotsunited.de/). We build web sites. And we do
-regular backups of our servers. That’s why we develop _wardrobe_.
+I am [Tim Weber](http://www.scytale.name/). I’m a web developer and server
+admin. And I do regular backups of servers and workstations. That’s why I
+develop _wardrobe_.
+
+The basic functionality of wardrobe has been developed during the six months I
+was working at [Dots United](http://www.dotsunited.de/). They allowed me to
+take over the project and continue to work on it in my spare time.
 
 
 ### How do I contact you? ###
 
 Please use the messaging feature of GitHub or the
-[issue tracker](http://github.com/dotsunited/wardrobe/issues).
+[issue tracker](http://github.com/scy/wardrobe/issues).

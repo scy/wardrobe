@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2010, Dots United GmbH
+# Copyright (c) 2010, Tim Weber
 # All rights reserved.
 
 # Licensed under the 3-clause BSD license.
